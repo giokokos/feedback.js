@@ -769,9 +769,9 @@ window.Feedback.Screenshot.prototype.render = function() {
 
 window.Feedback.Screenshot.prototype.data = function() {
 
-    if ( this._data !== undefined ) {
-        return this._data;
-    }
+    // if ( this._data !== undefined ) {
+    //     return this._data;
+    // }
 
     if ( this.h2cCanvas !== undefined ) {
 

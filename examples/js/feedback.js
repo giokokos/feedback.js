@@ -6,8 +6,8 @@
  Released under MIT License
 */
 (function( window, document, undefined ) {
-if ( window.Feedback !== undefined ) { 
-    return; 
+if ( window.Feedback !== undefined ) {
+    return;
 }
 
 // log proxy function
@@ -28,7 +28,7 @@ removeElements = function( remove ) {
 loader = function() {
     var div = document.createElement("div"), i = 3;
     div.className = "feedback-loader";
-    
+
     while (i--) { div.appendChild( document.createElement( "span" )); }
     return div;
 },
@@ -86,16 +86,20 @@ window.Feedback = function( options ) {
     options.header = options.header || "Send Feedback";
     options.url = options.url || "/";
     options.adapter = options.adapter || new window.Feedback.XHR( options.url );
-    
+
     options.nextLabel = options.nextLabel || "Continue";
     options.reviewLabel = options.reviewLabel || "Review";
     options.sendLabel = options.sendLabel || "Send";
     options.closeLabel = options.closeLabel || "Close";
-    
+
     options.messageSuccess = options.messageSuccess || "Your feedback was sent succesfully.";
     options.messageError = options.messageError || "There was an error sending your feedback to the server.";
-    
-  
+
+    options.blackoutButtonLabel = options.blackoutButtonLabel || "Blackout";
+    options.highlightButtonLabel = options.highlightButtonLabel || "Highlight";
+
+    options.blackoutHighlightText = options.blackoutHighlightText || "Highlight or blackout important information";
+
     if (options.pages === undefined ) {
         options.pages = [
             new window.Feedback.Form(),
@@ -121,7 +125,7 @@ window.Feedback = function( options ) {
                 }
             }
 
-            var a = element("a", "×"),
+            var a = element("a", "x"),
             modalHeader = document.createElement("div"),
             // modal container
             modalFooter = document.createElement("div");
@@ -139,7 +143,7 @@ window.Feedback = function( options ) {
             // build header element
             modalHeader.appendChild( a );
             modalHeader.appendChild( element("h3", options.header ) );
-            modalHeader.className =  "feedback-header";
+            modalHeader.className =  "modal-header";
 
             modalBody.className = "feedback-body";
 
@@ -151,16 +155,16 @@ window.Feedback = function( options ) {
             // Next button
             nextButton = element( "button", options.nextLabel );
 
-            nextButton.className =  "feedback-btn";
+            nextButton.className =  "btn btn-primary";
             nextButton.onclick = function() {
-                
+
                 if (currentPage > 0 ) {
                     if ( options.pages[ currentPage - 1 ].end( modal ) === false ) {
                         // page failed validation, cancel onclick
                         return;
                     }
                 }
-                
+
                 emptyElements( modalBody );
 
                 if ( currentPage === len ) {
@@ -168,12 +172,12 @@ window.Feedback = function( options ) {
                 } else {
 
                     options.pages[ currentPage ].start( modal, modalHeader, modalFooter, nextButton );
-                    
+
                     if ( options.pages[ currentPage ] instanceof window.Feedback.Review ) {
                         // create DOM for review page, based on collected data
                         options.pages[ currentPage ].render( options.pages );
                     }
-                    
+
                     // add page DOM to modal
                     modalBody.appendChild( options.pages[ currentPage++ ].dom );
 
@@ -181,18 +185,18 @@ window.Feedback = function( options ) {
                     if ( currentPage === len ) {
                         nextButton.firstChild.nodeValue = options.sendLabel;
                     }
-                    
+
                     // if next page is review page, change button label
-                    if ( options.pages[ currentPage ] instanceof window.Feedback.Review ) {   
+                    if ( options.pages[ currentPage ] instanceof window.Feedback.Review ) {
                         nextButton.firstChild.nodeValue = options.reviewLabel;
                     }
-                        
+
 
                 }
 
             };
 
-            modalFooter.className = "feedback-footer";
+            modalFooter.className = "modal-footer";
             modalFooter.appendChild( nextButton );
 
 
@@ -220,8 +224,8 @@ window.Feedback = function( options ) {
             if (currentPage > 0 ) {
                 options.pages[ currentPage - 1 ].end( modal );
             }
-                
-            // call close events for all pages    
+
+            // call close events for all pages
             for (var i = 0, len = options.pages.length; i < len; i++) {
                 options.pages[ i ].close();
             }
@@ -229,16 +233,16 @@ window.Feedback = function( options ) {
             return false;
 
         },
-        
+
         // send data
         send: function( adapter ) {
-            
+
             // make sure send adapter is of right prototype
             if ( !(adapter instanceof window.Feedback.Send) ) {
                 throw new Error( "Adapter is not an instance of Feedback.Send" );
             }
-            
-            // fetch data from all pages   
+
+            // fetch data from all pages
             for (var i = 0, len = options.pages.length, data = [], p = 0, tmp; i < len; i++) {
                 if ( (tmp = options.pages[ i ].data()) !== false ) {
                     data[ p++ ] = tmp;
@@ -246,31 +250,31 @@ window.Feedback = function( options ) {
             }
 
             nextButton.disabled = true;
-                
+
             emptyElements( modalBody );
             modalBody.appendChild( loader() );
 
             // send data to adapter for processing
             adapter.send( data, function( success ) {
-                
+
                 emptyElements( modalBody );
                 nextButton.disabled = false;
-                
+
                 nextButton.firstChild.nodeValue = options.closeLabel;
-                
+
                 nextButton.onclick = function() {
                     returnMethods.close();
-                    return false;  
+                    return false;
                 };
-                
+
                 if ( success === true ) {
                     modalBody.appendChild( document.createTextNode( options.messageSuccess ) );
                 } else {
                     modalBody.appendChild( document.createTextNode( options.messageError ) );
                 }
-                
+
             } );
-  
+
         }
     };
 
@@ -286,11 +290,11 @@ window.Feedback = function( options ) {
     button.setAttribute(H2C_IGNORE, true);
 
     button.onclick = returnMethods.open;
-    
+
     if ( options.appendTo !== null ) {
         ((options.appendTo !== undefined) ? options.appendTo : document.body).appendChild( button );
     }
-    
+
     return returnMethods;
 };
 window.Feedback.Page = function() {};
@@ -342,8 +346,9 @@ window.Feedback.Form.prototype.render = function() {
 
         switch( item.type ) {
             case "textarea":
-                this.dom.appendChild( element("label", item.label + ":" + (( item.required === true ) ? " *" : "")) );
-                this.dom.appendChild( ( item.element = document.createElement("textarea")) );
+                this.dom.appendChild(element("label", item.label + ":" + ((item.required === true) ? "" : "")));
+                this.dom.appendChild(document.createElement("br"));
+                this.dom.appendChild((item.element = document.createElement("textarea")));
                 break;
         }
     }
@@ -353,7 +358,7 @@ window.Feedback.Form.prototype.render = function() {
 };
 
 window.Feedback.Form.prototype.end = function() {
-    // form validation  
+    // form validation
     var i = 0, len = this.elements.length, item;
     for (; i < len; i++) {
         item = this.elements[ i ];
@@ -366,47 +371,48 @@ window.Feedback.Form.prototype.end = function() {
             item.element.className = "";
         }
     }
-    
+
     return true;
-    
+
 };
 
 window.Feedback.Form.prototype.data = function() {
-    
+
     if ( this._data !== undefined ) {
         // return cached value
         return this._data;
     }
-    
+
     var i = 0, len = this.elements.length, item, data = {};
-    
+
     for (; i < len; i++) {
         item = this.elements[ i ];
         data[ item.name ] = item.element.value;
     }
-    
+
     // cache and return data
     return ( this._data = data );
 };
 
 
 window.Feedback.Form.prototype.review = function( dom ) {
-  
+
     var i = 0, item, len = this.elements.length;
-      
+
     for (; i < len; i++) {
         item = this.elements[ i ];
-        
+
         if (item.element.value.length > 0) {
-            dom.appendChild( element("label", item.name + ":") );
-            dom.appendChild( document.createTextNode( item.element.value.length ) );
-            dom.appendChild( document.createElement( "hr" ) );
+            dom.appendChild(element("label", item.name));
+            dom.appendChild(document.createElement("br"));
+            dom.appendChild(document.createTextNode(item.element.value));
+            dom.appendChild(document.createElement("hr"));
         }
-        
+
     }
-    
+
     return dom;
-     
+
 };
 window.Feedback.Review = function() {
 
@@ -421,9 +427,9 @@ window.Feedback.Review.prototype.render = function( pages ) {
 
     var i = 0, len = pages.length, item;
     emptyElements( this.dom );
-    
+
     for (; i < len; i++) {
-        
+
         // get preview DOM items
         pages[ i ].review( this.dom );
 
@@ -473,7 +479,7 @@ window.Feedback.Screenshot.prototype.start = function( modal, modalHeader, modal
     if ( this.h2cDone ) {
         emptyElements( this.dom );
         nextButton.disabled = false;
-        
+
         var $this = this,
         feedbackHighlightElement = "feedback-highlight-element",
         dataExclude = "data-exclude";
@@ -585,7 +591,7 @@ window.Feedback.Screenshot.prototype.start = function( modal, modalHeader, modal
 
         };
 
-        this.highlightClose = element("div", "×");
+        this.highlightClose = element("div", "x");
         this.blackoutBox = document.createElement('div');
         this.highlightBox = document.createElement( "canvas" );
         this.highlightContainer = document.createElement('div');
@@ -598,7 +604,7 @@ window.Feedback.Screenshot.prototype.start = function( modal, modalHeader, modal
         ctx = highlightBox.getContext("2d"),
         buttonClickFunction = function( e ) {
             e.preventDefault();
-            
+
             if (blackoutButton.className.indexOf("active") === -1) {
                 blackoutButton.className += " active";
                 highlightButton.className = highlightButton.className.replace(/active/g,"");
@@ -610,7 +616,7 @@ window.Feedback.Screenshot.prototype.start = function( modal, modalHeader, modal
             action = !action;
         },
         clearBox = function() {
-            
+
             clearBoxEl(blackoutBox);
             clearBoxEl(highlightBox);
 
@@ -628,10 +634,9 @@ window.Feedback.Screenshot.prototype.start = function( modal, modalHeader, modal
             highlightClose.style.top =  "-50px";
 
         },
-        blackoutButton = element("a", "Blackout"),
-        highlightButton = element("a", "Highlight"),
+        blackoutButton = element("a", this.options.blackoutButtonLabel),
+        highlightButton = element("a", this.options.highlightButtonLabel),
         previousElement;
-
 
         modal.className += ' feedback-animate-toside';
 
@@ -653,7 +658,7 @@ window.Feedback.Screenshot.prototype.start = function( modal, modalHeader, modal
 
         var buttonItem = [ highlightButton, blackoutButton ];
 
-        this.dom.appendChild( element("p", "Highlight or blackout important information") );
+        this.dom.appendChild( element("p", this.options.blackoutHighlightText) );
 
         // add highlight and blackout buttons
         for (var i = 0; i < 2; i++ ) {
@@ -769,7 +774,7 @@ window.Feedback.Screenshot.prototype.data = function() {
     }
 
     if ( this.h2cCanvas !== undefined ) {
-      
+
         var ctx = this.h2cCanvas.getContext("2d"),
         canvasCopy,
         copyCtx,
@@ -817,7 +822,7 @@ window.Feedback.Screenshot.prototype.data = function() {
                 ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
                 ctx.lineTo(x, y + radius);
                 ctx.quadraticCurveTo(x, y, x + radius, y);
-               
+
             });
             ctx.closePath();
             ctx.clip();
@@ -825,32 +830,32 @@ window.Feedback.Screenshot.prototype.data = function() {
             ctx.globalAlpha = 1;
 
             ctx.drawImage(canvasCopy, 0,0);
-   
+
         }
-        
-        // to avoid security error break for tainted canvas   
+
+        // to avoid security error break for tainted canvas
         try {
             // cache and return data
             return ( this._data = this.h2cCanvas.toDataURL() );
         } catch( e ) {}
-        
+
     }
 };
 
 
 window.Feedback.Screenshot.prototype.review = function( dom ) {
-  
+
     var data = this.data();
     if ( data !== undefined ) {
         var img = new Image();
         img.src = data;
-        img.style.width = "300px";
+        img.style.width = "570px";
         dom.appendChild( img );
     }
-    
+
 };
 window.Feedback.XHR = function( url ) {
-    
+
     this.xhr = new XMLHttpRequest();
     this.url = url;
 
@@ -859,18 +864,18 @@ window.Feedback.XHR = function( url ) {
 window.Feedback.XHR.prototype = new window.Feedback.Send();
 
 window.Feedback.XHR.prototype.send = function( data, callback ) {
-    
+
     var xhr = this.xhr;
-    
+
     xhr.onreadystatechange = function() {
         if( xhr.readyState == 4 ){
             callback( (xhr.status === 200) );
         }
     };
-    
+
     xhr.open( "POST", this.url, true);
     xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
     xhr.send( "data=" + encodeURIComponent( window.JSON.stringify( data ) ) );
-     
+
 };
 })( window, document );

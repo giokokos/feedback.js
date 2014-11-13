@@ -44,6 +44,14 @@ element = function( name, text ) {
     el.appendChild( document.createTextNode( text ) );
     return el;
 },
+feedback_element = function( name, text ) {
+    var el = document.createElement( name );
+    var elm = document.createElement("i");
+    elm.className="fa fa-comments";
+    el.appendChild( elm );
+    el.appendChild( document.createTextNode( text ) );
+    return el;
+},
 // script onload function to provide support for IE as well
 scriptLoader = function( script, func ){
 
@@ -82,7 +90,7 @@ window.Feedback = function( options ) {
     options = options || {};
 
     // default properties
-    options.label = options.label || "Send Feedback";
+    options.label = options.label || "Feedback";
     options.header = options.header || "Send Feedback";
     options.url = options.url || "/";
     options.adapter = options.adapter || new window.Feedback.XHR( options.url );
@@ -284,8 +292,8 @@ window.Feedback = function( options ) {
 
     options = options || {};
 
-    button = element( "button", options.label );
-    button.className = "feedback-btn feedback-transform feedback-fixed-right";
+    button = feedback_element( "button", options.label );
+    button.className = "feedback-button feedback-fixed-right";
 
     button.setAttribute(H2C_IGNORE, true);
 
